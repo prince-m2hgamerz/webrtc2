@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>M2H WebRTC Calling</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 min-h-screen flex items-center justify-center font-[Poppins]">
+
+<div class="w-full max-w-lg p-6 bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl text-white">
+  <h1 class="text-3xl font-bold text-center mb-6 bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 via-pink-300 to-blue-400">
+    M2H Web Calling
+  </h1>
+
+  <!-- Username -->
+  <div class="flex gap-2 mb-6">
+    <input id="usernameInput" placeholder="Enter your username" class="flex-1 p-3 rounded-xl bg-white/20 border border-white/30 placeholder-gray-200 text-white outline-none" />
+    <button id="registerBtn" class="px-5 py-3 bg-green-500 hover:bg-green-600 rounded-xl font-semibold shadow-md transition-all">Register</button>
+  </div>
+
+  <!-- Online Users -->
+  <h2 class="text-xl font-semibold mb-2">Online Users</h2>
+  <div id="usersList" class="flex flex-col gap-3 max-h-64 overflow-y-auto"></div>
+
+  <!-- Call Area -->
+  <div id="callArea" class="hidden mt-6 flex flex-col gap-4">
+    <div class="grid grid-cols-2 gap-3">
+      <video id="localVideo" autoplay muted playsinline class="rounded-2xl border-2 border-white/30 shadow-lg"></video>
+      <video id="remoteVideo" autoplay playsinline class="rounded-2xl border-2 border-white/30 shadow-lg"></video>
+    </div>
+
+    <div class="flex justify-between mt-4 gap-2">
+      <button id="hangupBtn" class="flex-1 bg-gradient-to-r from-red-500 to-orange-500 hover:from-orange-500 hover:to-red-500 transition-all px-4 py-2 rounded-xl font-semibold shadow-lg">
+        🔴 End Call
+      </button>
+      <button id="copyLinkBtn" class="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-cyan-500 hover:to-blue-500 transition-all px-4 py-2 rounded-xl font-semibold shadow-lg">
+        🔗 Copy Link
+      </button>
+    </div>
+
+    <p id="shareLink" class="text-sm text-gray-200/80 break-words mt-2"></p>
+  </div>
+</div>
+
+<!-- Incoming Call Modal -->
+<div id="incomingCallModal" class="fixed inset-0 bg-black/70 flex items-center justify-center hidden">
+  <div class="bg-white/10 backdrop-blur-xl p-6 rounded-2xl text-white max-w-sm w-full text-center shadow-2xl">
+    <h2 class="text-2xl font-bold mb-4">Incoming Call</h2>
+    <p id="callerName" class="mb-4"></p>
+    <div class="flex gap-4 justify-center">
+      <button id="acceptBtn" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-xl font-semibold shadow-md">Accept</button>
+      <button id="rejectBtn" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-xl font-semibold shadow-md">Reject</button>
+    </div>
+  </div>
+</div>
+
+<footer class="absolute bottom-3 text-sm text-white/70 text-center w-full">
+  © 2025 M2H Web Solution
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
