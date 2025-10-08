@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "User-to-user WebRTC calling app",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js"
   },
