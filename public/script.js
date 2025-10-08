@@ -13,8 +13,34 @@ const callerName = document.getElementById("callerName");
 const acceptBtn = document.getElementById("acceptBtn");
 const rejectBtn = document.getElementById("rejectBtn");
 
-let username, ws, pc, makingOffer=false, ignoreOffer=false;
+let username, ws, pc;
+let candidateQueue = [];
 let currentCaller = null;
+
+// Helper to safely send via WebSocket
+function sendWS(data) {
+  if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(data));
+  else ws.addEventListener("open", () => ws.send(JSON.stringify(data)), { once: true });
+}
+
+// Create or reuse peer connection
+function createPeerConnection() {
+  if (pc) return pc;
+
+  pc = new RTCPeerConnection();
+
+  pc.onicecandidate = (event) => {
+    if (event.candidate && currentCaller) {
+      sendWS({ type: "candidate", candidate: event.candidate, target: currentCaller });
+    }
+  };
+
+  pc.ontrack = (event) => {
+    remoteVideo.srcObject = event.streams[0];
+  };
+
+  return pc;
+}
 
 // Register user
 registerBtn.onclick = () => {
@@ -23,7 +49,7 @@ registerBtn.onclick = () => {
 
   ws = new WebSocket("wss://webrtc2-ax2m.onrender.com");
 
-  ws.onopen = () => ws.send(JSON.stringify({ type: "register", username }));
+  ws.onopen = () => sendWS({ type: "register", username });
 
   ws.onmessage = async (event) => {
     let data;
@@ -31,11 +57,11 @@ registerBtn.onclick = () => {
     else data = JSON.parse(event.data);
 
     if (data.type === "users") updateUserList(data.users);
-    if (data.type === "sdp" || data.type === "candidate") handleIncoming(data);
+    if (["sdp", "candidate", "reject"].includes(data.type)) handleIncoming(data);
   };
 };
 
-// Update online users list
+// Update user list
 function updateUserList(users) {
   usersList.innerHTML = "";
   users.filter(u => u !== username).forEach(u => {
@@ -54,31 +80,26 @@ function updateUserList(users) {
   });
 }
 
-// Start call to specific user
-async function startCall(targetUser, videoCall=true) {
-  pc = new RTCPeerConnection();
+// Start call to user
+async function startCall(targetUser, videoCall = true) {
+  currentCaller = targetUser;
+  pc = createPeerConnection();
+
   const localStream = await navigator.mediaDevices.getUserMedia({ video: videoCall, audio: true });
   localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
   localVideo.srcObject = localStream;
 
-  pc.ontrack = e => remoteVideo.srcObject = e.streams[0];
-  pc.onicecandidate = e => {
-    if (e.candidate) ws.send(JSON.stringify({ type: "candidate", target: targetUser, candidate: e.candidate }));
-  };
-
-  makingOffer = true;
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
-  ws.send(JSON.stringify({ type: "sdp", sdp: pc.localDescription, target: targetUser }));
-  makingOffer = false;
+  sendWS({ type: "sdp", sdp: pc.localDescription, target: targetUser });
 
   callArea.classList.remove("hidden");
   shareLink.textContent = `Calling ${targetUser}...`;
 }
 
-// Handle incoming SDP / ICE
+// Handle incoming SDP/ICE
 async function handleIncoming(data) {
-  if (!pc) pc = new RTCPeerConnection();
+  if (!pc) pc = createPeerConnection();
 
   if (data.type === "sdp") {
     if (data.sdp.type === "offer") {
@@ -93,38 +114,53 @@ async function handleIncoming(data) {
         localVideo.srcObject = localStream;
 
         await pc.setRemoteDescription(data.sdp);
+        // Add queued ICE candidates
+        candidateQueue.forEach(c => pc.addIceCandidate(c));
+        candidateQueue = [];
+
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        ws.send(JSON.stringify({ type: "sdp", sdp: pc.localDescription, target: currentCaller }));
+        sendWS({ type: "sdp", sdp: pc.localDescription, target: currentCaller });
 
-        pc.ontrack = e => remoteVideo.srcObject = e.streams[0];
         callArea.classList.remove("hidden");
       };
 
       rejectBtn.onclick = () => {
         incomingCallModal.classList.add("hidden");
-        ws.send(JSON.stringify({ type: "reject", target: currentCaller }));
+        sendWS({ type: "reject", target: currentCaller });
         currentCaller = null;
       };
-    } else if (data.sdp.type === "answer" && pc.signalingState === "have-local-offer") {
-      await pc.setRemoteDescription(data.sdp);
+    } else if (data.sdp.type === "answer") {
+      if (pc.signalingState === "have-local-offer") {
+        await pc.setRemoteDescription(data.sdp);
+        // Add queued ICE candidates
+        candidateQueue.forEach(c => pc.addIceCandidate(c));
+        candidateQueue = [];
+      }
     }
   } else if (data.type === "candidate") {
-    try { await pc.addIceCandidate(data.candidate); } catch(e) { console.error(e); }
+    if (pc.remoteDescription) await pc.addIceCandidate(data.candidate);
+    else candidateQueue.push(data.candidate);
+  } else if (data.type === "reject") {
+    alert(`${data.from} rejected the call.`);
+    pc?.close();
+    pc = null;
+    callArea.classList.add("hidden");
   }
 }
 
 // Hangup
 hangupBtn.onclick = () => {
-  if (pc) pc.close();
+  pc?.close();
   pc = null;
+  currentCaller = null;
   callArea.classList.add("hidden");
   shareLink.textContent = "";
 };
 
-// Copy link
+// Copy room link
 copyLinkBtn.onclick = () => {
   navigator.clipboard.writeText(`${window.location.origin}?user=${username}`)
-    .then(()=>alert("Link copied!"))
-    .catch(()=>alert("Failed to copy"));
+    .then(() => alert("Link copied!"))
+    .catch(() => alert("Failed to copy"));
 };
