@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>M2H Web Call</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white">
+
+  <div class="bg-white/10 backdrop-blur-lg p-6 rounded-2xl shadow-lg w-[90%] max-w-md text-center">
+    <h1 class="text-2xl font-bold mb-4">📞 M2H Web Calling</h1>
+    <input id="roomInput" placeholder="Enter Room ID" class="w-full p-2 rounded-lg text-black" />
+    <button id="joinBtn" class="mt-4 bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg w-full font-semibold">Join Room</button>
+
+    <div id="callArea" class="hidden mt-6">
+      <div class="grid grid-cols-2 gap-3">
+        <video id="localVideo" autoplay muted class="rounded-lg border-2 border-white/30"></video>
+        <video id="remoteVideo" autoplay class="rounded-lg border-2 border-white/30"></video>
+      </div>
+      <button id="hangupBtn" class="mt-4 bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg w-full font-semibold">Hang Up</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
