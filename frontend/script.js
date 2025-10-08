@@ -34,7 +34,8 @@ async function startCall(roomId) {
   };
 
   // Replace this URL with your Render backend WebSocket URL
-  const wsUrl = `wss://your-backend-name.onrender.com/?room=${roomId}`;
+  // const wsUrl = `wss://your-backend-name.onrender.com/?room=${roomId}`;
+  const wsUrl = `wss://webrtc2-ax2m.onrender.com/?room=${roomId}`;
   ws = new WebSocket(wsUrl);
 
   ws.onmessage = async (event) => {
